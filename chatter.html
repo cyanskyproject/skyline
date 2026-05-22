@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Skyline Friends</title>
+<title>Chatter</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 
@@ -19,7 +19,6 @@ body {
   background: #eaf6ff;
 }
 
-/* TOP BAR */
 .topbar {
   background: #4fc3ff;
   padding: 12px 18px;
@@ -32,7 +31,6 @@ body {
   color: #0b4f6c;
 }
 
-/* LOGIN */
 .login-box {
   max-width: 360px;
   margin: 100px auto;
@@ -63,7 +61,6 @@ body {
   margin-top: 6px;
 }
 
-/* APP */
 .container {
   display: none;
   max-width: 800px;
@@ -78,7 +75,6 @@ body {
   height: 500px;
 }
 
-/* SIDEBAR */
 .sidebar {
   width: 200px;
   border-right: 1px solid #cfefff;
@@ -90,7 +86,6 @@ body {
   padding: 10px;
 }
 
-/* MAIN */
 .main {
   flex: 1;
   padding: 15px;
@@ -101,7 +96,6 @@ body {
   font-size: 13px;
 }
 
-/* BUTTON */
 .btn {
   margin-top: 10px;
   background: #4fc3ff;
@@ -116,29 +110,42 @@ body {
   cursor: pointer;
   color: #0b4f6c;
 }
+
+/* NEW */
+.auth-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.auth-tabs button {
+  flex: 1;
+}
 </style>
 </head>
 
 <body>
 
 <div class="topbar">
-  <div class="logo">Skyline Friends</div>
+  <div class="logo">Skyline Chatter</div>
   <div class="logout" onclick="logout()">Logout</div>
 </div>
 
-<!-- LOGIN -->
 <div class="login-box" id="loginBox">
-  <h3>Login</h3>
+
+  <div class="auth-tabs">
+    <button onclick="setMode('login')" id="loginTab">Login</button>
+    <button onclick="setMode('signup')" id="signupTab">Sign up</button>
+  </div>
 
   <input id="email" placeholder="Email">
   <input id="password" type="password" placeholder="Password">
 
-  <button onclick="login()">Login / Sign up</button>
+  <button onclick="authAction()" id="authBtn">Login</button>
 
   <div class="error" id="error"></div>
 </div>
 
-<!-- APP -->
 <div class="container" id="app">
 
   <div class="app">
@@ -168,29 +175,38 @@ const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS
 
 const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
-/* CHECK SESSION ON LOAD */
-async function checkUser() {
-  const { data } = await supabaseClient.auth.getSession();
+let mode = "login";
 
-  if (data.session) {
-    showApp();
-  }
+function setMode(m) {
+  mode = m;
+  document.getElementById("authBtn").textContent =
+    m === "login" ? "Login" : "Sign up";
 }
 
-checkUser();
+setMode("login");
 
-/* LOGIN */
-async function login() {
+async function authAction() {
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
-
   const errorBox = document.getElementById("error");
+
   errorBox.textContent = "";
 
-  const { data, error } = await supabaseClient.auth.signInWithPassword({
-    email,
-    password
-  });
+  let result;
+
+  if (mode === "login") {
+    result = await supabaseClient.auth.signInWithPassword({
+      email,
+      password
+    });
+  } else {
+    result = await supabaseClient.auth.signUp({
+      email,
+      password
+    });
+  }
+
+  const { data, error } = result;
 
   if (error) {
     errorBox.textContent = error.message;
@@ -199,16 +215,23 @@ async function login() {
 
   if (data.session) {
     showApp();
+  } else {
+    errorBox.textContent = "Check email if confirmation is required.";
   }
 }
 
-/* SHOW APP */
+async function checkUser() {
+  const { data } = await supabaseClient.auth.getSession();
+  if (data.session) showApp();
+}
+
+checkUser();
+
 function showApp() {
   document.getElementById("loginBox").style.display = "none";
   document.getElementById("app").style.display = "block";
 }
 
-/* LOGOUT */
 async function logout() {
   await supabaseClient.auth.signOut();
   location.reload();
