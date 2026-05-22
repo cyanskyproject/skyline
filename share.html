@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Share</title>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #eaf6ff;
+      color: #1b1b1b;
+    }
+
+    .topbar {
+      background: #4fc3ff;
+      padding: 12px 18px;
+      font-size: 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo {
+      font-family: "Catull BQ", Georgia, serif;
+      color: #0b4f6c;
+    }
+
+    .container {
+      max-width: 700px;
+      margin: 30px auto;
+      padding: 0 16px;
+    }
+
+    .panel {
+      background: #fff;
+      border: 1px solid #cfefff;
+      padding: 16px;
+    }
+
+    .filename {
+      margin-bottom: 10px;
+      font-size: 14px;
+      color: #2f9ed6;
+      min-height: 18px;
+    }
+
+    button {
+      padding: 10px 14px;
+      background: #4fc3ff;
+      border: none;
+      color: white;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .linkbox {
+      margin-top: 12px;
+      padding: 10px;
+      border: 1px solid #cfefff;
+      background: #f5fbff;
+      font-size: 13px;
+      word-break: break-all;
+    }
+
+    .hint {
+      font-size: 12px;
+      opacity: 0.7;
+      margin-top: 6px;
+    }
+
+    input[type="file"] {
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="topbar">
+    <div class="logo">Skyline Share</div>
+    <div style="font-size:12px;">file sharing</div>
+  </div>
+
+  <div class="container">
+
+    <div class="panel">
+
+      <div id="fileName" class="filename"></div>
+
+      <button onclick="openFilePicker()">Add to Share</button>
+
+      <div id="linkBox" class="linkbox" style="display:none;"></div>
+      <div class="hint">Copy this link to share the file (temporary local link)</div>
+
+      <input type="file" id="fileInput" onchange="handleFile()">
+
+    </div>
+
+  </div>
+
+  <script>
+    let currentFileURL = "";
+
+    function openFilePicker() {
+      document.getElementById("fileInput").click();
+    }
+
+    function handleFile() {
+      const input = document.getElementById("fileInput");
+      const file = input.files[0];
+
+      if (!file) return;
+
+      document.getElementById("fileName").textContent = "Selected: " + file.name;
+
+      currentFileURL = URL.createObjectURL(file);
+
+      const linkBox = document.getElementById("linkBox");
+      linkBox.style.display = "block";
+      linkBox.textContent = currentFileURL;
+    }
+  </script>
+
+</body>
+</html>
