@@ -106,7 +106,6 @@
   </div>
 
   <div class="container">
-
     <div class="panel">
 
       <div id="fileName" class="filename"></div>
@@ -124,7 +123,6 @@
       <input type="file" id="fileInput" onchange="uploadFile()">
 
     </div>
-
   </div>
 
   <div class="footer">
@@ -135,17 +133,48 @@
     const supabaseUrl = "https://jsjkpueenfdtfgxllnvv.supabase.co";
     const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpzamtwdWVlbmZkdGZneGxsbnZ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk0NzY3ODAsImV4cCI6MjA5NTA1Mjc4MH0.lsLCGyL3xDG6fUvC1IduGU5KbX_fLRyQIz0dOkac-s0";
 
-    const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+    const supabaseClient = supabase.createClient(
+      supabaseUrl,
+      supabaseKey
+    );
 
     const MAX_SIZE = 20 * 1024 * 1024;
     const uploadTimes = [];
 
+    async function loadFromId() {
+      const params = new URLSearchParams(window.location.search);
+      const id = params.get("id");
+
+      if (!id) return;
+
+      const { data, error } = await supabaseClient
+        .from("file_links")
+        .select("*")
+        .eq("id", id)
+        .single();
+
+      const errorBox = document.getElementById("errorBox");
+
+      if (error || !data) {
+        errorBox.textContent = "File not found.";
+        return;
+      }
+
+      window.location.href = data.url;
+    }
+
+    loadFromId();
+
     function generateId(length = 20) {
-      const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+      const chars =
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+
       let result = "";
 
       for (let i = 0; i < length; i++) {
-        result += chars.charAt(Math.floor(Math.random() * chars.length));
+        result += chars.charAt(
+          Math.floor(Math.random() * chars.length)
+        );
       }
 
       return result;
@@ -153,7 +182,10 @@
 
     function canUpload() {
       const now = Date.now();
-      const recent = uploadTimes.filter(t => now - t < 120000);
+      const recent = uploadTimes.filter(
+        t => now - t < 120000
+      );
+
       return recent.length < 5;
     }
 
@@ -166,76 +198,106 @@
     }
 
     async function uploadFile() {
-      const input = document.getElementById("fileInput");
+      const input =
+        document.getElementById("fileInput");
+
       const file = input.files[0];
+
       if (!file) return;
 
-      const errorBox = document.getElementById("errorBox");
-      const linkBox = document.getElementById("linkBox");
+      const errorBox =
+        document.getElementById("errorBox");
+
+      const linkBox =
+        document.getElementById("linkBox");
 
       errorBox.textContent = "";
       linkBox.style.display = "none";
 
-      document.getElementById("fileName").textContent = "Selected: " + file.name;
+      document.getElementById(
+        "fileName"
+      ).textContent =
+        "Selected: " + file.name;
 
       if (file.size > MAX_SIZE) {
-        errorBox.textContent = "Uh oh! Your file is too big.";
+        errorBox.textContent =
+          "Uh oh! Your file is too big.";
         return;
       }
 
       if (!canUpload()) {
-        errorBox.textContent = "Too many uploads. Wait 2 minutes.";
+        errorBox.textContent =
+          "Too many uploads. Wait 2 minutes.";
         return;
       }
 
       const shortId = generateId(20);
-      const safeName = file.name.replace(/\s+/g, "-");
-      const filePath = shortId + "-" + safeName;
 
-      const { error } = await supabaseClient
-        .storage
-        .from("skyline-files")
-        .upload(filePath, file);
+      const safeName =
+        file.name.replace(/\s+/g, "-");
+      
+      const filePath =
+        shortId + "-" + safeName;
+
+      const { error } =
+        await supabaseClient.storage
+          .from("skyline-files")
+          .upload(filePath, file);
 
       if (error) {
-        errorBox.textContent = error.message;
+        errorBox.textContent =
+          error.message;
         return;
       }
 
       recordUpload();
 
-      // get public URL
-      const { data: urlData } = supabaseClient
-        .storage
-        .from("skyline-files")
-        .getPublicUrl(filePath);
+      const { data: urlData } =
+        supabaseClient.storage
+          .from("skyline-files")
+          .getPublicUrl(filePath);
 
-      const fileUrl = urlData.publicUrl;
+      const fileUrl =
+        urlData.publicUrl;
 
-      // SAVE ID → URL IN DATABASE (THIS WAS MISSING)
-      const { error: dbError } = await supabaseClient
-        .from("file_links")
-        .insert([
-          {
-            id: shortId,
-            url: fileUrl
-          }
-        ]);
+      const { error: dbError } =
+        await supabaseClient
+          .from("file_links")
+          .insert([
+            {
+              id: shortId,
+              url: fileUrl
+            }
+          ]);
 
       if (dbError) {
-        errorBox.textContent = "DB error: " + dbError.message;
+        errorBox.textContent =
+          "DB error: " +
+          dbError.message;
         return;
       }
 
-      const shortUrl = `${window.location.origin}/share.html?id=${shortId}`;
+      const shortUrl =
+        `${window.location.origin}/share.html?id=${shortId}`;
 
-      linkBox.style.display = "block";
-      linkBox.textContent = shortUrl;
+      linkBox.style.display =
+        "block";
+
+      linkBox.textContent =
+        shortUrl;
 
       linkBox.onclick = () => {
-        navigator.clipboard.writeText(shortUrl);
-        linkBox.textContent = "Copied!";
-        setTimeout(() => linkBox.textContent = shortUrl, 1000);
+        navigator.clipboard.writeText(
+          shortUrl
+        );
+
+        linkBox.textContent =
+          "Copied!";
+
+        setTimeout(() => {
+          linkBox.textContent =
+            shortUrl;
+        }, 1000);
       };
     }
   </script>
