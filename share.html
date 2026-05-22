@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Share</title>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+
   <style>
     body {
       margin: 0;
@@ -63,6 +65,26 @@
       cursor: pointer;
     }
 
+    .error {
+      margin-top: 10px;
+      color: #FF0000;
+      font-family: Arial, sans-serif;
+      font-size: 14px;
+    }
+
+    .filesize-info {
+      margin-top: 6px;
+      font-size: 12px;
+      color: gray;
+    }
+
+    .footer {
+      text-align: center;
+      margin: 30px 0;
+      font-size: 12px;
+      opacity: 0.6;
+    }
+
     input[type="file"] {
       display: none;
     }
@@ -84,7 +106,14 @@
 
       <button onclick="pickFile()">Add to Share</button>
 
+      <div id="errorBox" class="error"></div>
+
       <div id="linkBox" class="linkbox" style="display:none;"></div>
+
+      <!-- FILE SIZE INFO MOVED HERE (below link box area) -->
+      <div class="filesize-info">
+        File size limit is 20 MB for now. This is subject to change in the future.
+      </div>
 
       <input type="file" id="fileInput" onchange="uploadFile()">
 
@@ -92,7 +121,18 @@
 
   </div>
 
+  <div class="footer">
+    Skyline • early build
+  </div>
+
   <script>
+    const supabaseUrl = "https://jsjkpueenfdtfgxllnvv.supabase.co";
+    const supabaseKey = "YOUR_ANON_KEY_HERE";
+
+    const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+
+    const MAX_SIZE = 20 * 1024 * 1024;
+
     function pickFile() {
       document.getElementById("fileInput").click();
     }
@@ -102,26 +142,45 @@
       const file = input.files[0];
       if (!file) return;
 
+      const errorBox = document.getElementById("errorBox");
+      const linkBox = document.getElementById("linkBox");
+
+      errorBox.textContent = "";
+      linkBox.style.display = "none";
+
       document.getElementById("fileName").textContent = "Selected: " + file.name;
 
-      const formData = new FormData();
-      formData.append("file", file);
+      if (file.size > MAX_SIZE) {
+        errorBox.textContent = "Uh oh! Your file is too big.";
+        return;
+      }
 
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        body: formData
-      });
+      const filePath = Date.now() + "-" + file.name;
 
-      const data = await res.json();
+      const { error } = await supabaseClient
+        .storage
+        .from("skyline-files")
+        .upload(filePath, file);
 
-      const box = document.getElementById("linkBox");
-      box.style.display = "block";
-      box.textContent = data.url;
+      if (error) {
+        errorBox.textContent = error.message;
+        return;
+      }
 
-      box.onclick = () => {
-        navigator.clipboard.writeText(data.url);
-        box.textContent = "Copied!";
-        setTimeout(() => box.textContent = data.url, 1000);
+      const { data: urlData } = supabaseClient
+        .storage
+        .from("skyline-files")
+        .getPublicUrl(filePath);
+
+      const url = urlData.publicUrl;
+
+      linkBox.style.display = "block";
+      linkBox.textContent = url;
+
+      linkBox.onclick = () => {
+        navigator.clipboard.writeText(url);
+        linkBox.textContent = "Copied!";
+        setTimeout(() => linkBox.textContent = url, 1000);
       };
     }
   </script>
