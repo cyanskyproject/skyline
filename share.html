@@ -16,7 +16,6 @@
     .topbar {
       background: #4fc3ff;
       padding: 12px 18px;
-      font-size: 18px;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -25,6 +24,7 @@
     .logo {
       font-family: "Catull BQ", Georgia, serif;
       color: #0b4f6c;
+      font-weight: normal;
     }
 
     .container {
@@ -41,7 +41,6 @@
 
     .filename {
       margin-bottom: 10px;
-      font-size: 14px;
       color: #2f9ed6;
       min-height: 18px;
     }
@@ -60,14 +59,8 @@
       padding: 10px;
       border: 1px solid #cfefff;
       background: #f5fbff;
-      font-size: 13px;
       word-break: break-all;
-    }
-
-    .hint {
-      font-size: 12px;
-      opacity: 0.7;
-      margin-top: 6px;
+      cursor: pointer;
     }
 
     input[type="file"] {
@@ -89,37 +82,47 @@
 
       <div id="fileName" class="filename"></div>
 
-      <button onclick="openFilePicker()">Add to Share</button>
+      <button onclick="pickFile()">Add to Share</button>
 
       <div id="linkBox" class="linkbox" style="display:none;"></div>
-      <div class="hint">Copy this link to share the file (temporary local link)</div>
 
-      <input type="file" id="fileInput" onchange="handleFile()">
+      <input type="file" id="fileInput" onchange="uploadFile()">
 
     </div>
 
   </div>
 
   <script>
-    let currentFileURL = "";
-
-    function openFilePicker() {
+    function pickFile() {
       document.getElementById("fileInput").click();
     }
 
-    function handleFile() {
+    async function uploadFile() {
       const input = document.getElementById("fileInput");
       const file = input.files[0];
-
       if (!file) return;
 
       document.getElementById("fileName").textContent = "Selected: " + file.name;
 
-      currentFileURL = URL.createObjectURL(file);
+      const formData = new FormData();
+      formData.append("file", file);
 
-      const linkBox = document.getElementById("linkBox");
-      linkBox.style.display = "block";
-      linkBox.textContent = currentFileURL;
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData
+      });
+
+      const data = await res.json();
+
+      const box = document.getElementById("linkBox");
+      box.style.display = "block";
+      box.textContent = data.url;
+
+      box.onclick = () => {
+        navigator.clipboard.writeText(data.url);
+        box.textContent = "Copied!";
+        setTimeout(() => box.textContent = data.url, 1000);
+      };
     }
   </script>
 
