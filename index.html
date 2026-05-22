@@ -1,9 +1,134 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <title>Title</title>
-  </head>
-  <body>
-    <h1>Text</h1>
-  </body>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Skyline</title>
+
+  <style>
+    @font-face {
+      font-family: "Catull BQ";
+      src: url("./fonts/catull.ttf") format("truetype");
+      font-weight: normal;
+      font-style: normal;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #eaf6ff;
+      color: #1b1b1b;
+    }
+
+    .topbar {
+      background: #4fc3ff;
+      padding: 12px 18px;
+      font-size: 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo {
+      font-family: "Catull BQ", Georgia, serif;
+      color: #0b4f6c;
+      font-weight: normal;
+      letter-spacing: 0.5px;
+    }
+
+    .subtitle {
+      font-size: 12px;
+      font-weight: normal;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 30px auto;
+      padding: 0 16px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .card {
+      background: #ffffff;
+      border: 1px solid #cfefff;
+      padding: 16px;
+    }
+
+    .card h2 {
+      margin: 0 0 8px 0;
+      color: #2f9ed6;
+      font-size: 18px;
+    }
+
+    .card p {
+      margin: 0 0 10px 0;
+      font-size: 14px;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 8px 12px;
+      background: #4fc3ff;
+      color: white;
+      text-decoration: none;
+      font-size: 14px;
+    }
+
+    .footer {
+      text-align: center;
+      margin: 30px 0;
+      font-size: 12px;
+      opacity: 0.6;
+    }
+
+    @media (max-width: 700px) {
+      .container {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="topbar">
+    <div class="logo">Skyline</div>
+    <div class="subtitle">cloud social platform</div>
+  </div>
+
+  <div class="container">
+
+    <div class="card">
+      <h2>Chatter</h2>
+      <p>Messages and calls with friends.</p>
+      <a class="btn" href="#">Open</a>
+    </div>
+
+    <div class="card">
+      <h2>Share</h2>
+      <p>Send files to other people.</p>
+      <a class="btn" href="#">Open</a>
+    </div>
+
+    <div class="card">
+      <h2>Arcade</h2>
+      <p>Play multiplayer games.</p>
+      <a class="btn" href="#">Open</a>
+    </div>
+
+    <div class="card">
+      <h2>Watch</h2>
+      <p>View and share videos.</p>
+      <a class="btn" href="#">Open</a>
+    </div>
+
+  </div>
+
+  <div class="footer">
+    Skyline • early build
+  </div>
+
+</body>
 </html>
