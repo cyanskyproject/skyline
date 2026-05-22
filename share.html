@@ -110,7 +110,6 @@
 
       <div id="linkBox" class="linkbox" style="display:none;"></div>
 
-      <!-- FILE SIZE INFO MOVED HERE (below link box area) -->
       <div class="filesize-info">
         File size limit is 20 MB for now. This is subject to change in the future.
       </div>
@@ -132,6 +131,18 @@
     const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
     const MAX_SIZE = 20 * 1024 * 1024;
+
+    const uploadTimes = [];
+
+    function canUpload() {
+      const now = Date.now();
+      const recent = uploadTimes.filter(t => now - t < 120000);
+      return recent.length < 5;
+    }
+
+    function recordUpload() {
+      uploadTimes.push(Date.now());
+    }
 
     function pickFile() {
       document.getElementById("fileInput").click();
@@ -155,7 +166,13 @@
         return;
       }
 
-      const filePath = Date.now() + "-" + file.name;
+      if (!canUpload()) {
+        errorBox.textContent = "Too many uploads. Wait 2 minutes.";
+        return;
+      }
+
+      const safeName = file.name.replace(/\s+/g, "-");
+      const filePath = crypto.randomUUID() + "-" + safeName;
 
       const { error } = await supabaseClient
         .storage
@@ -166,6 +183,8 @@
         errorBox.textContent = error.message;
         return;
       }
+
+      recordUpload();
 
       const { data: urlData } = supabaseClient
         .storage
