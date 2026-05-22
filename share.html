@@ -8,6 +8,13 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 
   <style>
+    @font-face {
+      font-family: "CatullBQ";
+      src: url("/fonts/Catull BQ Regular.ttf") format("truetype");
+      font-weight: normal;
+      font-style: normal;
+    }
+
     body {
       margin: 0;
       font-family: Arial, sans-serif;
@@ -24,7 +31,7 @@
     }
 
     .logo {
-      font-family: "Catull BQ", Georgia, serif;
+      font-family: "CatullBQ", Georgia, serif;
       color: #0b4f6c;
       font-weight: normal;
     }
@@ -131,8 +138,18 @@
     const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
     const MAX_SIZE = 20 * 1024 * 1024;
-
     const uploadTimes = [];
+
+    function generateId(length = 20) {
+      const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+      let result = "";
+
+      for (let i = 0; i < length; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+
+      return result;
+    }
 
     function canUpload() {
       const now = Date.now();
@@ -171,8 +188,9 @@
         return;
       }
 
+      const shortId = generateId(20);
       const safeName = file.name.replace(/\s+/g, "-");
-      const filePath = crypto.randomUUID() + "-" + safeName;
+      const filePath = shortId + "-" + safeName;
 
       const { error } = await supabaseClient
         .storage
@@ -186,20 +204,38 @@
 
       recordUpload();
 
+      // get public URL
       const { data: urlData } = supabaseClient
         .storage
         .from("skyline-files")
         .getPublicUrl(filePath);
 
-      const url = urlData.publicUrl;
+      const fileUrl = urlData.publicUrl;
+
+      // SAVE ID → URL IN DATABASE (THIS WAS MISSING)
+      const { error: dbError } = await supabaseClient
+        .from("file_links")
+        .insert([
+          {
+            id: shortId,
+            url: fileUrl
+          }
+        ]);
+
+      if (dbError) {
+        errorBox.textContent = "DB error: " + dbError.message;
+        return;
+      }
+
+      const shortUrl = `${window.location.origin}/share.html?id=${shortId}`;
 
       linkBox.style.display = "block";
-      linkBox.textContent = url;
+      linkBox.textContent = shortUrl;
 
       linkBox.onclick = () => {
-        navigator.clipboard.writeText(url);
+        navigator.clipboard.writeText(shortUrl);
         linkBox.textContent = "Copied!";
-        setTimeout(() => linkBox.textContent = url, 1000);
+        setTimeout(() => linkBox.textContent = shortUrl, 1000);
       };
     }
   </script>
