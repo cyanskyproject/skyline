@@ -55,6 +55,23 @@ body {
   cursor: pointer;
 }
 
+.auth-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.auth-tabs button {
+  flex: 1;
+  padding: 8px;
+  cursor: pointer;
+}
+
+.active-tab {
+  background: #0b4f6c;
+  color: white;
+}
+
 .error {
   color: red;
   font-size: 13px;
@@ -84,6 +101,15 @@ body {
 
 .tab {
   padding: 10px;
+  cursor: pointer;
+}
+
+.tab-content {
+  display: none;
+}
+
+.tab-content.active {
+  display: block;
 }
 
 .main {
@@ -110,17 +136,6 @@ body {
   cursor: pointer;
   color: #0b4f6c;
 }
-
-/* NEW */
-.auth-tabs {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 10px;
-}
-
-.auth-tabs button {
-  flex: 1;
-}
 </style>
 </head>
 
@@ -131,11 +146,12 @@ body {
   <div class="logout" onclick="logout()">Logout</div>
 </div>
 
+<!-- LOGIN -->
 <div class="login-box" id="loginBox">
 
   <div class="auth-tabs">
-    <button onclick="setMode('login')" id="loginTab">Login</button>
-    <button onclick="setMode('signup')" id="signupTab">Sign up</button>
+    <button id="loginTab" class="active-tab" onclick="setMode('login')">Login</button>
+    <button id="signupTab" onclick="setMode('signup')">Sign up</button>
   </div>
 
   <input id="email" placeholder="Email">
@@ -146,44 +162,56 @@ body {
   <div class="error" id="error"></div>
 </div>
 
+<!-- APP -->
 <div class="container" id="app">
 
   <div class="app">
 
     <div class="sidebar">
-      <div class="tab">Friends</div>
-      <div class="tab">Requests</div>
+      <div class="tab" onclick="showTab('friends')">Friends</div>
+      <div class="tab" onclick="showTab('requests')">Requests</div>
     </div>
 
     <div class="main">
-      <h3>Friends</h3>
 
-      <div class="friend-empty">
-        You have no friends yet. Add another friend by clicking the + button, and typing their username, then waiting for them to accept your friend request.
+      <div id="friends" class="tab-content active">
+        <h3>Friends</h3>
+
+        <div class="friend-empty">
+          You have no friends yet. Add another friend by clicking the + button.
+        </div>
+
+        <button class="btn" onclick="addFriend(prompt('User ID'))">
+          + Add Friend
+        </button>
       </div>
 
-      <button class="btn">+ Add Friend</button>
+      <div id="requests" class="tab-content">
+        <h3>Requests</h3>
+        <p>No requests yet.</p>
+      </div>
+
     </div>
-
   </div>
-
 </div>
 
 <script>
 const supabaseUrl = "https://jsjkpueenfdtfgxllnvv.supabase.co";
 const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpzamtwdWVlbmZkdGZneGxsbnZ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk0NzY3ODAsImV4cCI6MjA5NTA1Mjc4MH0.lsLCGyL3xDG6fUvC1IduGU5KbX_fLRyQIz0dOkac-s0";
-
 const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
 let mode = "login";
+let currentUser = null;
 
 function setMode(m) {
   mode = m;
+
+  document.getElementById("loginTab").classList.toggle("active-tab", m === "login");
+  document.getElementById("signupTab").classList.toggle("active-tab", m === "signup");
+
   document.getElementById("authBtn").textContent =
     m === "login" ? "Login" : "Sign up";
 }
-
-setMode("login");
 
 async function authAction() {
   const email = document.getElementById("email").value;
@@ -206,23 +234,22 @@ async function authAction() {
     });
   }
 
-  const { data, error } = result;
-
-  if (error) {
-    errorBox.textContent = error.message;
+  if (result.error) {
+    errorBox.textContent = result.error.message;
     return;
   }
 
-  if (data.session) {
-    showApp();
-  } else {
-    errorBox.textContent = "Check email if confirmation is required.";
-  }
+  currentUser = result.data.user || result.data.session?.user;
+  showApp();
 }
 
 async function checkUser() {
   const { data } = await supabaseClient.auth.getSession();
-  if (data.session) showApp();
+
+  if (data.session) {
+    currentUser = data.session.user;
+    showApp();
+  }
 }
 
 checkUser();
@@ -230,6 +257,21 @@ checkUser();
 function showApp() {
   document.getElementById("loginBox").style.display = "none";
   document.getElementById("app").style.display = "block";
+}
+
+function showTab(tab) {
+  document.querySelectorAll(".tab-content").forEach(t => t.classList.remove("active"));
+  document.getElementById(tab).classList.add("active");
+}
+
+async function addFriend(receiverId) {
+  if (!receiverId) return;
+
+  await supabaseClient.from("friend_requests").insert({
+    sender: currentUser.id,
+    receiver: receiverId,
+    status: "pending"
+  });
 }
 
 async function logout() {
