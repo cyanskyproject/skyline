@@ -206,8 +206,11 @@ let currentUser = null;
 function setMode(m) {
   mode = m;
 
-  document.getElementById("loginTab").classList.toggle("active-tab", m === "login");
-  document.getElementById("signupTab").classList.toggle("active-tab", m === "signup");
+  document.getElementById("loginTab")
+    .classList.toggle("active-tab", m === "login");
+
+  document.getElementById("signupTab")
+    .classList.toggle("active-tab", m === "signup");
 
   document.getElementById("authBtn").textContent =
     m === "login" ? "Login" : "Sign up";
@@ -239,39 +242,188 @@ async function authAction() {
     return;
   }
 
-  currentUser = result.data.user || result.data.session?.user;
+  currentUser =
+    result.data.user ||
+    result.data.session?.user;
+
   showApp();
+  loadFriends();
+  loadRequests();
 }
 
 async function checkUser() {
-  const { data } = await supabaseClient.auth.getSession();
+  const { data } =
+    await supabaseClient.auth.getSession();
 
   if (data.session) {
     currentUser = data.session.user;
+
     showApp();
+    loadFriends();
+    loadRequests();
   }
 }
 
 checkUser();
 
 function showApp() {
-  document.getElementById("loginBox").style.display = "none";
-  document.getElementById("app").style.display = "block";
+  document.getElementById("loginBox")
+    .style.display = "none";
+
+  document.getElementById("app")
+    .style.display = "block";
 }
 
 function showTab(tab) {
-  document.querySelectorAll(".tab-content").forEach(t => t.classList.remove("active"));
-  document.getElementById(tab).classList.add("active");
+  document
+    .querySelectorAll(".tab-content")
+    .forEach(t => t.classList.remove("active"));
+
+  document
+    .getElementById(tab)
+    .classList.add("active");
 }
 
 async function addFriend(receiverId) {
   if (!receiverId) return;
 
-  await supabaseClient.from("friend_requests").insert({
-    sender: currentUser.id,
-    receiver: receiverId,
-    status: "pending"
-  });
+  const { error } =
+    await supabaseClient
+      .from("friend_requests")
+      .insert({
+        sender: currentUser.id,
+        receiver: receiverId,
+        status: "pending"
+      });
+
+  if (error) {
+    alert(error.message);
+    return;
+  }
+
+  alert("Friend request sent!");
+}
+
+async function loadRequests() {
+  const { data, error } =
+    await supabaseClient
+      .from("friend_requests")
+      .select("*")
+      .eq("receiver", currentUser.id)
+      .eq("status", "pending");
+
+  const requestsTab =
+    document.getElementById("requests");
+
+  if (error) {
+    requestsTab.innerHTML =
+      "<p>Error loading requests</p>";
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    requestsTab.innerHTML = `
+      <h3>Requests</h3>
+      <p>No requests yet.</p>
+    `;
+    return;
+  }
+
+  requestsTab.innerHTML =
+    `<h3>Requests</h3>` +
+    data.map(r => `
+      <div style="margin-bottom:10px;">
+        Request from:
+        <br>
+        <small>${r.sender}</small>
+        <br><br>
+        <button class="btn"
+        onclick="acceptRequest('${r.id}')">
+          Accept
+        </button>
+      </div>
+    `).join("");
+}
+
+async function acceptRequest(id) {
+  const { error } =
+    await supabaseClient
+      .from("friend_requests")
+      .update({
+        status: "accepted"
+      })
+      .eq("id", id);
+
+  if (error) {
+    alert(error.message);
+    return;
+  }
+
+  loadRequests();
+  loadFriends();
+}
+
+async function loadFriends() {
+  const { data, error } =
+    await supabaseClient
+      .from("friend_requests")
+      .select("*")
+      .eq("status", "accepted")
+      .or(
+        `sender.eq.${currentUser.id},receiver.eq.${currentUser.id}`
+      );
+
+  const friendsTab =
+    document.getElementById("friends");
+
+  if (error) {
+    friendsTab.innerHTML =
+      "<p>Error loading friends</p>";
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    friendsTab.innerHTML = `
+      <h3>Friends</h3>
+
+      <div class="friend-empty">
+        You have no friends yet.
+        Add another friend by clicking
+        the + button.
+      </div>
+
+      <button class="btn"
+      onclick="addFriend(prompt('User ID'))">
+        + Add Friend
+      </button>
+    `;
+    return;
+  }
+
+  const friendList =
+    data.map(friend => {
+      const friendId =
+        friend.sender === currentUser.id
+          ? friend.receiver
+          : friend.sender;
+
+      return `
+        <div style="margin-bottom:8px;">
+          ${friendId}
+        </div>
+      `;
+    }).join("");
+
+  friendsTab.innerHTML = `
+    <h3>Friends</h3>
+
+    ${friendList}
+
+    <button class="btn"
+    onclick="addFriend(prompt('User ID'))">
+      + Add Friend
+    </button>
+  `;
 }
 
 async function logout() {
